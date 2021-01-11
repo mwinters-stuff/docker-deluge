@@ -2,10 +2,6 @@ name: Create release with docker
 
 on:
   workflow_dispatch:
-    inputs: 
-      version:
-        description: "Image version to create"
-        required: true
  
 jobs:
 
@@ -14,11 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-       
-      -
-         name: Print version
-         run: echo ${{github.event.inputs.version}}
-
+   
       -
         name: Checkout
         uses: actions/checkout@v2
@@ -39,6 +31,15 @@ jobs:
       -
         name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
+      -
+        id: version
+        name: Get version
+        run: |
+          output=$(./get-version.sh)
+          echo ::set-output name=the_version::$output
+      -
+        name: version
+        run: echo "Version ${{steps.modify.outputs.the_version}}"
       - 
         name: Build and push
         uses: docker/build-push-action@v2
@@ -49,4 +50,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{github.repository}}:latest
-            ghcr.io/${{github.repository}}:${{github.event.inputs.version}}
+            ghcr.io/${{github.repository}}:${{steps.modify.outputs.the_version}}

@@ -39,7 +39,7 @@ jobs:
           echo ::set-output name=the_version::$output
       -
         name: version
-        run: echo "Version ${{steps.modify.outputs.the_version}}"
+        run: echo "Version ${{steps.version.outputs.the_version}}"
       - 
         name: Build and push
         uses: docker/build-push-action@v2
@@ -50,4 +50,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{github.repository}}:latest
-            ghcr.io/${{github.repository}}:${{steps.modify.outputs.the_version}}
+            ghcr.io/${{github.repository}}:${{steps.version.outputs.the_version}}

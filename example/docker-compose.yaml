@@ -1,0 +1,68 @@
+version: '3.7'
+
+
+services:
+  pia-wg:
+    network_mode: bridge
+    build:
+      context: https://github.com/thrnz/docker-wireguard-pia.git
+    container_name: pia-wg
+    restart: always
+    volumes:
+      - pia-volume:/pia
+    # privileged: true
+    ports:
+      - "8112:8112"
+      - "58846:58846"
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    env_file:
+      - "./conf/pia-wg.env"
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.default.disable_ipv6=1
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.lo.disable_ipv6=1
+    # The container has no recovery logic. Use a healthcheck to catch disconnects.
+    healthcheck:
+      test: ping -c 1 www.google.com || exit 1
+      interval: 120s
+      timeout: 10s
+      retries: 3
+
+  deluge:
+    image: ghcr.io/mwinters-stuff/docker-deluge:latest
+    container_name: deluge
+    depends_on:
+      - pia-wg
+    network_mode: "service:pia-wg"
+    env_file:
+      - "./conf/deluge.env"    
+    volumes:
+      - nfs-nas-tv:/mnt/TV
+      - nfs-nas-movies:/mnt/Movies
+      - "./data/deluge/opt/config2:/config"
+      - "./data/deluge/opt/scripts:/scripts"
+      - "./data/deluge/opt/download:/downloads"
+    restart: always
+    healthcheck:
+      test: pidof python3 || exit 1
+      interval: 120s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pia-volume:
+  nfs-nas-tv:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=nas,nolock,rw,tcp,noatime"
+      device: ":/share/TV"
+  nfs-nas-movies:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=nas,nolock,rw,tcp,noatime"
+      device: ":/share/Movies"
